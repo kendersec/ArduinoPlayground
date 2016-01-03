@@ -274,20 +274,20 @@ void setup() {
   pinMode(F, OUTPUT);
   pinMode(G, OUTPUT);
 
-  pinMode(BUTTON, INPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
 }
 
 void loop() {
-  if (button_down(BUTTON, true)) {
+  if (button_down(BUTTON)) {
     play();
   }
 }
 
 int prev = -1;
 
-boolean button_down(int buttonPin, boolean pullUp) {
+boolean button_down(int buttonPin) {
   int now = digitalRead(buttonPin);
-  boolean res = now != prev && prev == pullUp ? HIGH : LOW;
+  boolean res = now != prev && prev == LOW;
 
   prev = now;
   // prevent debounce
