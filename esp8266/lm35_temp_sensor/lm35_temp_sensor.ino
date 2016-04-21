@@ -1,40 +1,42 @@
-#include <Phant.h>
 #include <ESP8266WiFi.h>
+
+//https://github.com/tzapu/WiFiManager
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>
+
+#include <Phant.h>
+
+#define MINUTE_MICROS 60 * 1000 * 1000
 
 #define SAMPLES 100
 #define MAGIC 0.09775171065 // reading*100/1023 -> 0-100C 0-1023
 
-const char* host     = "data.sparkfun.com";
-const char* ssid     = "ASUS";
-const char* password = "9RAy2SefacRE";
-
+const char* host = "data.sparkfun.com";
+const int httpPort = 80;
 Phant phant(host, "q5LJyVxgaGiqgO5NzpAN", "BVoBx67jGqHypDxEkl2E");
 
-void setup(void) {
-  Serial.begin(115200);
+void setup()
+{ 
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
 
-  delay(10);
+  //sets timeout until configuration portal gets turned off
+  //useful to make it all retry or go to sleep in seconds
+  wifiManager.setTimeout(180);
 
-  // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  //fetches ssid and pass and tries to connect
+  //if it does not connect it starts an access point with the specified name
+  //here  "AutoConnectAP"
+  //and goes into a blocking loop awaiting configuration
+  if(!wifiManager.autoConnect("ESP8266")) {
+    ESP.deepSleep(5 * MINUTE_MICROS);
   }
-
-  Serial.println("");
-  Serial.println("WiFi connected");  
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
 }
 
-void loop() {
-
+void loop()
+{
   float temp = 0;
 
   for (int i = 0; i <= SAMPLES; i++) {
@@ -49,27 +51,12 @@ void loop() {
   const String strTemp = dtostrf(temp, 4, 1, buf);
 
   // Sending to the server
-  Serial.print("connecting to ");
-  Serial.println(host);
-  
   // Use WiFiClient class to create TCP connections
   WiFiClient client;
-  const int httpPort = 80;
-  if (!client.connect(host, httpPort)) {
-    Serial.println("connection failed");
-    return;
+  if (client.connect(host, httpPort)) {
+    phant.add("temp", strTemp);
+    client.print(phant.post());
   }
 
-  phant.add("temp", strTemp);
-  
-  Serial.println("----HTTP POST----");
-  const String req = phant.post();
-  client.print(req);
-  Serial.println(req);
-
-  // Read all the lines of the reply from server and print them to Serial
-  while(client.available()){
-    String line = client.readStringUntil('\r');
-    Serial.print(line); // Trying to avoid using serial
-  }
+  ESP.deepSleep(MINUTE_MICROS);
 }
