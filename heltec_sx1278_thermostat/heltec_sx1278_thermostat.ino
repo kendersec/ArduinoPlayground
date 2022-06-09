@@ -5,6 +5,8 @@ Use rtl_433 to sniff the data and inspectrum to inspect and extract the msg, run
 
 rtl_433 -f 433.20Mhz -s 1024k -S unknown
 
+PulseView can also be useful
+
 */
 
 #include <RadioLib.h>
